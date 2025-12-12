@@ -1,0 +1,8 @@
+---
+# Cible à scanner
+nmap_target: "127.0.0.1"
+nmap_ports: "1-1024"
+
+# Où stocker les rapports
+nmap_reports_dir: "/opt/audit/reports"
+nmap_report_basename: "scan_nginx"

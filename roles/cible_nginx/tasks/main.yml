@@ -1,0 +1,28 @@
+---
+# Rôle : Déploiement d'une machine cible (conteneur nginx)
+
+- name: Créer le dossier de rapports
+  file:
+    path: /opt/audit/reports
+    state: directory
+    mode: '0755'
+
+- name: Lancer le conteneur cible nginx
+  community.docker.docker_container:
+    name: cible_nginx
+    image: nginx:stable
+    state: started
+    recreate: true
+    published_ports:
+      - "8080:80"
+    volumes:
+      - /opt/audit/reports:/reports
+
+- name: Attendre que nginx soit disponible
+  uri:
+    url: "http://localhost:8080"
+    status_code: 200
+  register: nginx_status
+  retries: 10
+  delay: 2
+  until: nginx_status.status == 200

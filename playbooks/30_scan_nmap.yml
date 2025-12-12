@@ -1,0 +1,7 @@
+---
+- name: Scanner la machine cible avec Nmap
+  hosts: local
+  connection: local
+  become: true
+  roles:
+    - scan_nmap
