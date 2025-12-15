@@ -1,0 +1,21 @@
+---
+- name: Ajouter les routes LAN <-> DMZ via fw
+  hosts: all
+  become: true
+  tasks: []
+
+- name: Route sur attaquant vers la DMZ via fw (10.10.10.1)
+  hosts: vm_attaquant
+  become: true
+  tasks:
+    - name: Route DMZ
+      ansible.builtin.command: ip route replace 10.10.20.0/24 via 10.10.10.1
+      changed_when: false
+
+- name: Route sur cible DMZ vers le LAN via fw (10.10.20.1)
+  hosts: vm_cible_dmz
+  become: true
+  tasks:
+    - name: Route LAN
+      ansible.builtin.command: ip route replace 10.10.10.0/24 via 10.10.20.1
+      changed_when: false

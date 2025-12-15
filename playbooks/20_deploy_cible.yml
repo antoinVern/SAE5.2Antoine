@@ -1,8 +1,0 @@
----
-- name: Déployer la machine cible (conteneur nginx)
-  hosts: local
-  connection: local
-  become: true
-
-  roles:
-    - cible_nginx

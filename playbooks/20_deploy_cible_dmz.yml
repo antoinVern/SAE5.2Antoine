@@ -1,0 +1,17 @@
+---
+- name: Déployer nginx sur la cible DMZ
+  hosts: vm_cible_dmz
+  become: true
+  tasks:
+    - name: Installer nginx
+      ansible.builtin.apt:
+        name: nginx
+        state: present
+        update_cache: yes
+
+    - name: Démarrer nginx
+      ansible.builtin.service:
+        name: nginx
+        state: started
+        enabled: true
+        

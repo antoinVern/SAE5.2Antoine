@@ -1,50 +1,32 @@
-- name: Installer Docker sur la machine locale
-  hosts: local
-  connection: local
+---
+- name: Installer Docker et outils d’audit sur la VM attaquante
+  hosts: vm_attaquant
   become: true
-  gather_facts: true
 
   tasks:
-    - name: Installer paquets prerequisites (Debian/Ubuntu)
-      apt:
+    - name: Mettre à jour le cache APT
+      ansible.builtin.apt:
+        update_cache: yes
+
+    - name: Installer Docker depuis les dépôts Debian
+      ansible.builtin.apt:
         name:
+          - docker.io
+          - docker-compose
           - ca-certificates
           - curl
-          - gnupg
-          - lsb-release
-        state: present
-        update_cache: yes
-
-    - name: Créer dossier pour clé Docker
-      file:
-        path: /etc/apt/keyrings
-        state: directory
-        mode: '0755'
-
-    - name: Télécharger et installer la clé GPG Docker
-      shell: |
-        curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
-      args:
-        creates: /etc/apt/keyrings/docker.gpg
-
-    - name: Ajouter le dépôt Docker
-      apt_repository:
-        repo: "deb [arch=amd64 signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/debian {{ ansible_lsb.codename }} stable"
+          - iproute2
+          - iputils-ping
         state: present
 
-    - name: Installer Docker
-      apt:
-        name:
-          - docker-ce
-          - docker-ce-cli
-          - containerd.io
-          - docker-buildx-plugin
-          - docker-compose-plugin
-        state: present
-        update_cache: yes
-
-    - name: Assurer que Docker est démarré
-      service:
+    - name: Activer et démarrer Docker
+      ansible.builtin.service:
         name: docker
         state: started
-        enabled: yes
+        enabled: true
+
+    - name: Ajouter l'utilisateur vagrant au groupe docker
+      ansible.builtin.user:
+        name: vagrant
+        groups: docker
+        append: yes
