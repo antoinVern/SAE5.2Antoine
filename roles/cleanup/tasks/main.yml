@@ -1,0 +1,25 @@
+---
+# Rôle : nettoyage de l'environnement d'audit
+
+- name: Arrêter et supprimer le conteneur cible nginx (si présent)
+  community.docker.docker_container:
+    name: cible_nginx
+    state: absent
+  ignore_errors: true
+
+- name: Supprimer le conteneur nmap_runner (si présent)
+  community.docker.docker_container:
+    name: nmap_runner
+    state: absent
+  ignore_errors: true
+
+- name: Supprimer les rapports (optionnel)
+  file:
+    path: /opt/audit/reports
+    state: absent
+
+- name: Supprimer le dossier scripts (optionnel)
+  file:
+    path: /opt/audit/scripts
+    state: absent
+

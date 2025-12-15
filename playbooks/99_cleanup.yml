@@ -1,0 +1,7 @@
+---
+- name: Nettoyer l'environnement d'audit
+  hosts: local
+  connection: local
+  become: true
+  roles:
+    - cleanup
