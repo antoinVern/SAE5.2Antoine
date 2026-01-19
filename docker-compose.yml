@@ -84,7 +84,7 @@ services:
     volumes:
       - ./scripts:/scripts
       - /var/run/docker.sock:/var/run/docker.sock:ro
-    command: /bin/bash -c "apt-get update && apt-get install -y python3 python3-pip docker.io && pip3 install flask flask-cors && python3 /scripts/control_api.py"
+    command: /bin/bash -c "apt-get update && apt-get install -y python3 python3-pip docker.io docker-compose-plugin && pip3 install flask flask-cors && python3 /scripts/control_api.py"
     ports:
       - "5002:5002"
     restart: unless-stopped
