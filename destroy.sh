@@ -13,8 +13,4 @@ docker-compose down -v
 echo "🧹 Nettoyage des réseaux..."
 docker network prune -f
 
-# Optionnel: Nettoyer les images (décommenter si nécessaire)
-# echo "🧹 Nettoyage des images..."
-# docker image prune -f
-
 echo "✅ Laboratoire détruit avec succès!"

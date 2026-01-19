@@ -1,5 +1,0 @@
----
-# Collections Ansible optionnelles
-collections:
-  - name: community.general
-    version: ">=5.0.0"
