@@ -275,6 +275,14 @@ vagrant destroy
 ansible-playbook site.yml
 ```
 
+### Comment exécuter seulement l'audit ?
+
+```powershell
+ansible-playbook audit.yml
+# OU
+.\scripts\run_audit.ps1 audit
+```
+
 ### Comment utiliser un autre provider Vagrant ?
 
 Modifie `vagrant/Vagrantfile` pour utiliser un autre provider (libvirt, VMware, etc.)

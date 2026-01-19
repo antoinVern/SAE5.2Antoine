@@ -1,0 +1,56 @@
+---
+# Rôle : Configuration sécurité (firewall, routage)
+
+- name: Activer le routage IPv4 (persistant via sysctl)
+  ansible.posix.sysctl:
+    name: net.ipv4.ip_forward
+    value: "1"
+    state: present
+    reload: yes
+
+- name: Installer nftables
+  ansible.builtin.apt:
+    name: nftables
+    state: present
+    update_cache: yes
+
+- name: Déployer règles nftables LAN / DMZ
+  ansible.builtin.copy:
+    dest: /etc/nftables.conf
+    mode: "0644"
+    content: |
+      flush ruleset
+
+      table inet filter {
+        chain input {
+          type filter hook input priority 0;
+          policy accept;
+        }
+
+        chain forward {
+          type filter hook forward priority 0;
+          policy drop;
+
+          ct state established,related accept
+
+          # Autoriser LAN -> DMZ pour audit/démo
+          ip saddr 10.10.10.0/24 ip daddr 10.10.20.0/24 icmp type echo-request accept
+          ip saddr 10.10.10.0/24 ip daddr 10.10.20.0/24 tcp dport 22 accept
+          ip saddr 10.10.10.0/24 ip daddr 10.10.20.0/24 tcp dport 80 accept
+        }
+
+        chain output {
+          type filter hook output priority 0;
+          policy accept;
+        }
+      }
+
+- name: Vérifier la config nftables avant redémarrage (nft -c)
+  ansible.builtin.command: nft -c -f /etc/nftables.conf
+  changed_when: false
+
+- name: Activer et redémarrer nftables
+  ansible.builtin.service:
+    name: nftables
+    state: restarted
+    enabled: true

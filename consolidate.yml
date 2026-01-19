@@ -1,0 +1,8 @@
+---
+- name: Consolidation des rapports
+  hosts: vm_attaquant
+  become: true
+  roles:
+    - audit
+  vars:
+    audit_action: consolidate

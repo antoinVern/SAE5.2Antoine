@@ -1,8 +1,20 @@
 ---
-# Rôle : Déploiement d'une machine cible (conteneur nginx)
+# Rôle : Déploiement application cible (nginx en conteneur)
+
+- name: Installer dépendances Python pour community.docker
+  ansible.builtin.apt:
+    name:
+      - python3-pip
+    state: present
+    update_cache: yes
+
+- name: Installer SDK Docker (python)
+  ansible.builtin.pip:
+    name: docker
+    state: present
 
 - name: Créer le dossier de rapports
-  file:
+  ansible.builtin.file:
     path: /opt/audit/reports
     state: directory
     mode: '0755'
@@ -19,7 +31,7 @@
       - /opt/audit/reports:/reports
 
 - name: Attendre que nginx soit disponible
-  uri:
+  ansible.builtin.uri:
     url: "http://localhost:80"
     status_code: 200
   register: nginx_status

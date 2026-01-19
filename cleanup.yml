@@ -1,0 +1,8 @@
+---
+- name: Nettoyage de l'environnement
+  hosts: vm_attaquant
+  become: true
+  roles:
+    - audit
+  vars:
+    audit_action: cleanup

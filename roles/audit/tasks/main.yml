@@ -1,0 +1,131 @@
+---
+# Rôle : Outils et exécution d'audit
+
+- name: Installation outils d'audit
+  ansible.builtin.apt:
+    name:
+      - nmap
+      - python3
+      - python3-pip
+      - curl
+      - iproute2
+      - iputils-ping
+    state: present
+    update_cache: yes
+  when: audit_action is not defined or audit_action == "install"
+
+- name: Créer arborescence audit
+  ansible.builtin.file:
+    path: /opt/audit/reports
+    state: directory
+    mode: "0755"
+  when: audit_action is not defined or audit_action == "install"
+
+- name: Exécution scans d'audit Nmap
+  block:
+    - name: Créer le dossier de rapports
+      ansible.builtin.file:
+        path: "{{ reports_dir | default('/opt/audit/reports') }}"
+        state: directory
+        mode: "0755"
+
+    - name: Nettoyer anciens rapports de démo (optionnel)
+      ansible.builtin.shell: |
+        rm -f {{ reports_dir | default('/opt/audit/reports') }}/discovery_*.gnmap {{ reports_dir | default('/opt/audit/reports') }}/scan_*.txt {{ reports_dir | default('/opt/audit/reports') }}/scan_*.xml {{ reports_dir | default('/opt/audit/reports') }}/targets.txt
+      changed_when: false
+
+    - name: Découverte des hôtes actifs (ping scan)
+      ansible.builtin.shell: |
+        docker run --rm --network host -v {{ reports_dir | default('/opt/audit/reports') }}:/reports instrumentisto/nmap:latest \
+          -sn -n {{ item }} -oG /reports/discovery_{{ item | replace('/','_') }}.gnmap
+      loop: "{{ subnets | default(['10.10.10.0/24', '10.10.20.0/24']) }}"
+
+    - name: Extraire les IP actives détectées
+      ansible.builtin.shell: |
+        cat {{ reports_dir | default('/opt/audit/reports') }}/discovery_*.gnmap \
+        | awk '/Up$/{print $2}' \
+        | sort -u > {{ reports_dir | default('/opt/audit/reports') }}/targets.txt
+
+    - name: Scan rapide des services (22/80/443) pour chaque cible
+      ansible.builtin.shell: |
+        if [ ! -s {{ reports_dir | default('/opt/audit/reports') }}/targets.txt ]; then
+          echo "Aucune cible détectée" > {{ reports_dir | default('/opt/audit/reports') }}/scan_summary.txt
+          exit 0
+        fi
+        while read -r ip; do
+          docker run --rm --network host -v {{ reports_dir | default('/opt/audit/reports') }}:/reports instrumentisto/nmap:latest \
+            -n -Pn -T4 --open -sS -p 22,80,443 "$ip" \
+            -oN "/reports/scan_${ip}.txt" \
+            -oX "/reports/scan_${ip}.xml"
+        done < {{ reports_dir | default('/opt/audit/reports') }}/targets.txt
+  when: audit_action is not defined or audit_action == "scan"
+
+- name: Consolidation des rapports
+  block:
+    - name: Créer le répertoire de scripts si nécessaire
+      ansible.builtin.file:
+        path: /opt/audit/scripts
+        state: directory
+        mode: "0755"
+
+    - name: Copier le script de consolidation
+      ansible.builtin.copy:
+        src: "{{ playbook_dir }}/../scripts/consolidate_reports.py"
+        dest: /opt/audit/scripts/consolidate_reports.py
+        mode: "0755"
+
+    - name: Copier docker-compose pour audit
+      ansible.builtin.copy:
+        src: "{{ playbook_dir }}/../docker/docker-compose.audit.yml"
+        dest: /opt/audit/scripts/docker-compose.audit.yml
+        mode: "0644"
+
+    - name: Lancer la consolidation via Docker Compose
+      ansible.builtin.shell: |
+        cd /opt/audit/scripts
+        docker-compose -f docker-compose.audit.yml --profile consolidate up --remove-orphans report_consolidator
+      environment:
+        COMPOSE_FILE: "/opt/audit/scripts/docker-compose.audit.yml"
+
+    - name: Vérifier que le rapport consolidé a été généré
+      ansible.builtin.stat:
+        path: "{{ reports_dir | default('/opt/audit/reports') }}/audit_consolidated_report.html"
+      register: consolidated_report
+
+    - name: Afficher le chemin du rapport consolidé
+      ansible.builtin.debug:
+        msg: "✅ Rapport consolidé disponible: {{ reports_dir | default('/opt/audit/reports') }}/audit_consolidated_report.html"
+  when: audit_action is defined and audit_action == "consolidate"
+
+- name: Nettoyage de l'environnement
+  block:
+    - name: Arrêter et supprimer le conteneur cible nginx (si présent)
+      community.docker.docker_container:
+        name: cible_nginx
+        state: absent
+      ignore_errors: true
+
+    - name: Supprimer le conteneur nmap_runner (si présent)
+      community.docker.docker_container:
+        name: nmap_runner
+        state: absent
+      ignore_errors: true
+
+    - name: Supprimer le conteneur report_consolidator (si présent)
+      community.docker.docker_container:
+        name: report_consolidator
+        state: absent
+      ignore_errors: true
+
+    - name: Supprimer les rapports (optionnel)
+      ansible.builtin.file:
+        path: "{{ reports_dir | default('/opt/audit/reports') }}"
+        state: absent
+      ignore_errors: true
+
+    - name: Supprimer le dossier scripts (optionnel)
+      ansible.builtin.file:
+        path: /opt/audit/scripts
+        state: absent
+      ignore_errors: true
+  when: audit_action is defined and audit_action == "cleanup"

@@ -6,7 +6,10 @@ set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-PLAYBOOKS_DIR="$PROJECT_ROOT/playbooks"
+SITE_YML="$PROJECT_ROOT/site.yml"
+AUDIT_YML="$PROJECT_ROOT/audit.yml"
+CONSOLIDATE_YML="$PROJECT_ROOT/consolidate.yml"
+CLEANUP_YML="$PROJECT_ROOT/cleanup.yml"
 
 # Couleurs pour l'affichage
 RED='\033[0;31m'
@@ -68,8 +71,8 @@ deploy() {
         print_info "Génération manuelle de l'inventaire requise sur Linux/Mac"
     fi
     
-    print_info "Exécution des playbooks de déploiement..."
-    ansible-playbook "$PLAYBOOKS_DIR/site.yml"
+    print_info "Exécution du playbook principal..."
+    ansible-playbook "$SITE_YML"
     
     print_success "Déploiement terminé"
 }
@@ -78,7 +81,7 @@ audit() {
     print_header
     print_info "🔍 Exécution des scans d'audit..."
     
-    ansible-playbook "$PLAYBOOKS_DIR/30_scan_nmap.yml"
+    ansible-playbook "$AUDIT_YML"
     
     print_success "Audit terminé - Rapports disponibles dans /opt/audit/reports sur la VM attaquant"
 }
@@ -87,7 +90,7 @@ consolidate() {
     print_header
     print_info "📊 Consolidation des rapports..."
     
-    ansible-playbook "$PLAYBOOKS_DIR/40_consolidate_reports.yml"
+    ansible-playbook "$CONSOLIDATE_YML"
     
     print_success "Consolidation terminée"
     print_info "Rapport HTML disponible: /opt/audit/reports/audit_consolidated_report.html"
@@ -97,7 +100,7 @@ cleanup() {
     print_header
     print_info "🧹 Nettoyage de l'environnement..."
     
-    ansible-playbook "$PLAYBOOKS_DIR/99_cleanup.yml"
+    ansible-playbook "$CLEANUP_YML"
     
     print_info "Arrêt des VMs Vagrant..."
     cd "$PROJECT_ROOT/vagrant"

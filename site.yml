@@ -1,0 +1,53 @@
+---
+- name: SAÉ 5.02 - Déploiement complet de l'environnement d'audit
+  hosts: all
+  gather_facts: false
+  tasks: []
+
+- name: Installation Docker sur les machines nécessaires
+  hosts:
+    - vm_attaquant
+    - vm_cible_dmz
+  become: true
+  roles:
+    - docker_moteur
+
+- name: Configuration sécurité et réseau
+  hosts: vm_fw
+  become: true
+  roles:
+    - securite
+
+- name: Configuration routes réseau
+  hosts: all
+  become: true
+  roles:
+    - socle_commun
+
+- name: Déploiement application cible
+  hosts: vm_cible_dmz
+  become: true
+  roles:
+    - deploiement_app
+
+- name: Préparation outils d'audit
+  hosts: vm_attaquant
+  become: true
+  roles:
+    - audit
+
+- name: Exécution scans d'audit
+  hosts: vm_attaquant
+  become: true
+  roles:
+    - audit
+  vars:
+    audit_action: scan
+
+- name: Consolidation des rapports
+  hosts: vm_attaquant
+  become: true
+  roles:
+    - audit
+  vars:
+    audit_action: consolidate

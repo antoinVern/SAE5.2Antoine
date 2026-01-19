@@ -1,6 +1,6 @@
 Param(
   [string]$VagrantDir = "vagrant",
-  [string]$OutputFile = "inventory/hosts.ini"
+  [string]$OutputFile = "inventory.ini"
 )
 
 $ErrorActionPreference = "Stop"
@@ -65,7 +65,6 @@ $out += "[all:vars]"
 $out += "ansible_python_interpreter=/usr/bin/python3"
 $out += ""
 
-New-Item -ItemType Directory -Force -Path (Split-Path $OutputFile) | Out-Null
 $out -join "`n" | Set-Content -Encoding ascii -Path $OutputFile
 
 Write-Host "Inventaire généré: $OutputFile"

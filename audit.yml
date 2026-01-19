@@ -1,0 +1,8 @@
+---
+- name: Exécution scans d'audit
+  hosts: vm_attaquant
+  become: true
+  roles:
+    - audit
+  vars:
+    audit_action: scan

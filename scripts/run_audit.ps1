@@ -11,7 +11,7 @@ $ErrorActionPreference = "Stop"
 
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $ProjectRoot = Split-Path -Parent $ScriptDir
-$PlaybooksDir = Join-Path $ProjectRoot "playbooks"
+$SiteYml = Join-Path $ProjectRoot "site.yml"
 $VagrantDir = Join-Path $ProjectRoot "vagrant"
 
 function Print-Header {
@@ -64,8 +64,8 @@ function Start-Deploy {
     Print-Info "Génération de l'inventaire Ansible..."
     & (Join-Path $ScriptDir "gen-inventory.ps1")
     
-    Print-Info "Exécution des playbooks de déploiement..."
-    ansible-playbook (Join-Path $PlaybooksDir "site.yml")
+    Print-Info "Exécution du playbook principal..."
+    ansible-playbook $SiteYml
     
     Pop-Location
     
@@ -76,7 +76,8 @@ function Start-Audit {
     Print-Header
     Print-Info "🔍 Exécution des scans d'audit..."
     
-    ansible-playbook (Join-Path $PlaybooksDir "30_scan_nmap.yml")
+    $AuditYml = Join-Path $ProjectRoot "audit.yml"
+    ansible-playbook $AuditYml
     
     Print-Success "Audit terminé - Rapports disponibles dans /opt/audit/reports sur la VM attaquant"
 }
@@ -85,7 +86,8 @@ function Start-Consolidate {
     Print-Header
     Print-Info "📊 Consolidation des rapports..."
     
-    ansible-playbook (Join-Path $PlaybooksDir "40_consolidate_reports.yml")
+    $ConsolidateYml = Join-Path $ProjectRoot "consolidate.yml"
+    ansible-playbook $ConsolidateYml
     
     Print-Success "Consolidation terminée"
     Print-Info "Rapport HTML disponible: /opt/audit/reports/audit_consolidated_report.html"
@@ -95,7 +97,8 @@ function Start-Cleanup {
     Print-Header
     Print-Info "🧹 Nettoyage de l'environnement..."
     
-    ansible-playbook (Join-Path $PlaybooksDir "99_cleanup.yml")
+    $CleanupYml = Join-Path $ProjectRoot "cleanup.yml"
+    ansible-playbook $CleanupYml
     
     Print-Info "Arrêt des VMs Vagrant..."
     Push-Location $VagrantDir

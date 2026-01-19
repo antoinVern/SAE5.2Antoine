@@ -1,0 +1,12 @@
+---
+# Rôle : Configuration socle commun (routes réseau)
+
+- name: Route sur attaquant vers la DMZ via fw (10.10.10.1)
+  ansible.builtin.command: ip route replace 10.10.20.0/24 via 10.10.10.1
+  changed_when: false
+  when: inventory_hostname == "attaquant"
+
+- name: Route sur cible DMZ vers le LAN via fw (10.10.20.1)
+  ansible.builtin.command: ip route replace 10.10.10.0/24 via 10.10.20.1
+  changed_when: false
+  when: inventory_hostname == "cible_dmz"

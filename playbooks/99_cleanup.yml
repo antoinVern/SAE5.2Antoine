@@ -1,8 +1,0 @@
----
-- name: Nettoyer l'environnement d'audit
-  hosts:
-    - vm_attaquant
-    - vm_cible_dmz
-  become: true
-  roles:
-    - cleanup

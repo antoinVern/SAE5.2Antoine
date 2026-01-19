@@ -1,0 +1,29 @@
+---
+# Rôle : Installation et configuration de Docker
+
+- name: Mettre à jour le cache APT
+  ansible.builtin.apt:
+    update_cache: yes
+
+- name: Installer Docker depuis les dépôts Debian
+  ansible.builtin.apt:
+    name:
+      - docker.io
+      - docker-compose
+      - ca-certificates
+      - curl
+      - iproute2
+      - iputils-ping
+    state: present
+
+- name: Activer et démarrer Docker
+  ansible.builtin.service:
+    name: docker
+    state: started
+    enabled: true
+
+- name: Ajouter l'utilisateur vagrant au groupe docker
+  ansible.builtin.user:
+    name: vagrant
+    groups: docker
+    append: yes
