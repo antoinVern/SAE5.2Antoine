@@ -1,7 +1,4 @@
 services:
-  # =========================
-  # Ansible Control Node
-  # =========================
   ansible-control:
     image: cytopia/ansible:latest
     container_name: lab-ansible-control
@@ -16,9 +13,6 @@ services:
     command: tail -f /dev/null
     restart: unless-stopped
 
-  # =========================
-  # Target Web (HTTP simple)
-  # =========================
   target-web:
     image: ubuntu:22.04
     container_name: lab-target-web
@@ -32,9 +26,6 @@ services:
       - "8080:8080"
     restart: unless-stopped
 
-  # =========================
-  # Target Database (MySQL)
-  # =========================
   target-db:
     image: ubuntu:22.04
     container_name: lab-target-db
@@ -47,9 +38,6 @@ services:
       - "3306:3306"
     restart: unless-stopped
 
-  # =========================
-  # Target API (Flask)
-  # =========================
   target-api:
     image: ubuntu:22.04
     container_name: lab-target-api
@@ -62,9 +50,6 @@ services:
       - "5000:5000"
     restart: unless-stopped
 
-  # =========================
-  # Web UI (NGINX)
-  # =========================
   web-ui:
     image: nginx:alpine
     container_name: lab-web-ui
@@ -79,9 +64,6 @@ services:
       - control-api
     restart: unless-stopped
 
-  # =========================
-  # Network Scanner (HOST)
-  # =========================
   network-scanner:
     image: ubuntu:22.04
     container_name: lab-network-scanner
@@ -94,9 +76,6 @@ services:
       - NET_RAW
     restart: unless-stopped
 
-  # =========================
-  # Control API (BUILD)
-  # =========================
   control-api:
     build:
       context: .
@@ -105,15 +84,16 @@ services:
     networks:
       - lab-network
     volumes:
-      - ./scripts:/scripts
+      # on monte TOUT le projet pour que docker-compose trouve docker-compose.yml
+      - ./:/project
       - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - PROJECT_DIR=/project
+      - COMPOSE_FILE=/project/docker-compose.yml
     ports:
       - "5002:5002"
     restart: unless-stopped
 
-# =========================
-# Network
-# =========================
 networks:
   lab-network:
     driver: bridge

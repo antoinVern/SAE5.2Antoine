@@ -3,9 +3,9 @@ FROM ubuntu:22.04
 RUN apt-get update && \
     apt-get install -y \
       python3 python3-pip \
-      docker.io docker-compose-plugin && \
+      docker.io docker-compose && \
     pip3 install flask flask-cors && \
     apt-get clean
 
-WORKDIR /scripts
-CMD ["python3", "/scripts/control_api.py"]
+WORKDIR /project
+CMD ["python3", "/project/scripts/control_api.py"]

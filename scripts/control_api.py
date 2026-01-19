@@ -1,101 +1,82 @@
 #!/usr/bin/env python3
 """
 API de contrôle du laboratoire
-- Docker Compose v2 (docker compose) + fallback v1 (docker-compose)
-- Exécution sécurisée sans shell, et messages d'erreur clairs
+- Utilise docker-compose (v1) DANS le conteneur
+- Pointeur explicite vers /project/docker-compose.yml
 """
-import subprocess
 import os
+import subprocess
 from flask import Flask, jsonify
 from flask_cors import CORS
 
 app = Flask(__name__)
 CORS(app)
 
-LAB_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+PROJECT_DIR = os.environ.get("PROJECT_DIR", "/project")
+COMPOSE_FILE = os.environ.get("COMPOSE_FILE", os.path.join(PROJECT_DIR, "docker-compose.yml"))
 
-def detect_compose_cmd():
-    # v2
+def run_command(cmd, cwd=None):
     try:
-        r = subprocess.run(["docker", "compose", "version"], capture_output=True, text=True, cwd=LAB_DIR)
-        if r.returncode == 0:
-            return ["docker", "compose"]
-    except Exception:
-        pass
-
-    # v1
-    try:
-        r = subprocess.run(["docker-compose", "version"], capture_output=True, text=True, cwd=LAB_DIR)
-        if r.returncode == 0:
-            return ["docker-compose"]
-    except Exception:
-        pass
-
-    return None
-
-COMPOSE = detect_compose_cmd()
-
-def run_command(cmd):
-    """Exécute une commande: cmd peut être une liste ou une string."""
-    try:
-        if isinstance(cmd, str):
-            # pour scripts: "bash ./destroy.sh" etc.
-            result = subprocess.run(cmd, shell=True, capture_output=True, text=True, cwd=LAB_DIR)
-        else:
-            result = subprocess.run(cmd, capture_output=True, text=True, cwd=LAB_DIR)
-
+        result = subprocess.run(
+            cmd,
+            capture_output=True,
+            text=True,
+            cwd=cwd
+        )
         return {
             "success": result.returncode == 0,
+            "code": result.returncode,
             "output": (result.stdout or "").strip(),
             "error": (result.stderr or "").strip(),
-            "code": result.returncode,
         }
     except Exception as e:
-        return {"success": False, "output": "", "error": str(e), "code": -1}
+        return {"success": False, "code": -1, "output": "", "error": str(e)}
 
-def compose_or_error(args):
-    if not COMPOSE:
-        return {"success": False, "output": "", "error": "Docker Compose introuvable (v2 ou v1).", "code": -1}
-    return run_command(COMPOSE + args)
+def compose(args):
+    return run_command(["docker-compose", "-f", COMPOSE_FILE] + args, cwd=PROJECT_DIR)
 
 @app.route("/api/control/start", methods=["POST"])
 def start_lab():
-    result = compose_or_error(["up", "-d"])
+    result = compose(["up", "-d"])
     if result["success"]:
         return jsonify({"status": "running", "message": "Laboratoire démarré avec succès"})
-    return jsonify({"status": "error", "message": f"Erreur: {result.get('error') or result.get('output') or 'Unknown error'}"}), 500
+    return jsonify({"status": "error", "message": f"Erreur: {result['error'] or result['output'] or 'Unknown error'}"}), 500
 
 @app.route("/api/control/stop", methods=["POST"])
 def stop_lab():
-    result = compose_or_error(["stop"])
+    result = compose(["stop"])
     if result["success"]:
         return jsonify({"status": "stopped", "message": "Laboratoire arrêté avec succès"})
-    return jsonify({"status": "error", "message": f"Erreur: {result.get('error') or result.get('output') or 'Unknown error'}"}), 500
+    return jsonify({"status": "error", "message": f"Erreur: {result['error'] or result['output'] or 'Unknown error'}"}), 500
 
 @app.route("/api/control/restart", methods=["POST"])
 def restart_lab():
-    result = compose_or_error(["restart"])
+    result = compose(["restart"])
     if result["success"]:
         return jsonify({"status": "running", "message": "Laboratoire redémarré avec succès"})
-    return jsonify({"status": "error", "message": f"Erreur: {result.get('error') or result.get('output') or 'Unknown error'}"}), 500
+    return jsonify({"status": "error", "message": f"Erreur: {result['error'] or result['output'] or 'Unknown error'}"}), 500
 
 @app.route("/api/control/destroy", methods=["POST"])
 def destroy_lab():
-    # on laisse destroy.sh gérer le down -v etc.
-    result = run_command("bash ./destroy.sh")
+    # down + volumes
+    result = compose(["down", "-v", "--remove-orphans"])
     if result["success"]:
         return jsonify({"status": "destroyed", "message": "Laboratoire détruit avec succès"})
-    return jsonify({"status": "error", "message": f"Erreur: {result.get('error') or result.get('output') or 'Unknown error'}"}), 500
+    return jsonify({"status": "error", "message": f"Erreur: {result['error'] or result['output'] or 'Unknown error'}"}), 500
 
 @app.route("/api/logs", methods=["GET"])
 def get_logs():
-    result = compose_or_error(["logs", "--tail=50"])
+    result = compose(["logs", "--tail=50"])
     logs = result.get("output") or result.get("error") or "Aucun log disponible"
     return jsonify({"logs": logs})
 
 @app.route("/api/health", methods=["GET"])
 def health():
-    return jsonify({"status": "ok", "compose": " ".join(COMPOSE) if COMPOSE else None})
+    return jsonify({
+        "status": "ok",
+        "project_dir": PROJECT_DIR,
+        "compose_file": COMPOSE_FILE
+    })
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5002, debug=False)
