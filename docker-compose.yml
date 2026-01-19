@@ -1,4 +1,7 @@
 services:
+  # =========================
+  # Ansible Control Node
+  # =========================
   ansible-control:
     image: cytopia/ansible:latest
     container_name: lab-ansible-control
@@ -7,12 +10,15 @@ services:
     volumes:
       - ./ansible:/etc/ansible
       - ./scripts:/scripts
-      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /var/run/docker.sock:/var/run/docker.sock
     environment:
       - ANSIBLE_HOST_KEY_CHECKING=False
     command: tail -f /dev/null
     restart: unless-stopped
 
+  # =========================
+  # Target Web (HTTP simple)
+  # =========================
   target-web:
     image: ubuntu:22.04
     container_name: lab-target-web
@@ -26,6 +32,9 @@ services:
       - "8080:8080"
     restart: unless-stopped
 
+  # =========================
+  # Target Database (MySQL)
+  # =========================
   target-db:
     image: ubuntu:22.04
     container_name: lab-target-db
@@ -33,11 +42,14 @@ services:
       - lab-network
     environment:
       - MYSQL_ROOT_PASSWORD=secure_password_123
-    command: /bin/bash -c "apt-get update && apt-get install -y python3 mysql-server && service mysql start && tail -f /dev/null"
+    command: /bin/bash -c "apt-get update && apt-get install -y mysql-server && service mysql start && tail -f /dev/null"
     ports:
       - "3306:3306"
     restart: unless-stopped
 
+  # =========================
+  # Target API (Flask)
+  # =========================
   target-api:
     image: ubuntu:22.04
     container_name: lab-target-api
@@ -50,6 +62,9 @@ services:
       - "5000:5000"
     restart: unless-stopped
 
+  # =========================
+  # Web UI (NGINX)
+  # =========================
   web-ui:
     image: nginx:alpine
     container_name: lab-web-ui
@@ -61,9 +76,12 @@ services:
     ports:
       - "80:80"
     depends_on:
-      - ansible-control
+      - control-api
     restart: unless-stopped
 
+  # =========================
+  # Network Scanner (HOST)
+  # =========================
   network-scanner:
     image: ubuntu:22.04
     container_name: lab-network-scanner
@@ -76,19 +94,26 @@ services:
       - NET_RAW
     restart: unless-stopped
 
+  # =========================
+  # Control API (BUILD)
+  # =========================
   control-api:
-    image: ubuntu:22.04
+    build:
+      context: .
+      dockerfile: scripts/Dockerfile.control-api
     container_name: lab-control-api
     networks:
       - lab-network
     volumes:
       - ./scripts:/scripts
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-    command: /bin/bash -c "apt-get update && apt-get install -y python3 python3-pip docker.io docker-compose-plugin && pip3 install flask flask-cors && python3 /scripts/control_api.py"
+      - /var/run/docker.sock:/var/run/docker.sock
     ports:
       - "5002:5002"
     restart: unless-stopped
 
+# =========================
+# Network
+# =========================
 networks:
   lab-network:
     driver: bridge
