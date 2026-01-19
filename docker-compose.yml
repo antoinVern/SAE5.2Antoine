@@ -1,5 +1,4 @@
 services:
-  # Conteneur Ansible Control Node
   ansible-control:
     image: cytopia/ansible:latest
     container_name: lab-ansible-control
@@ -14,7 +13,6 @@ services:
     command: tail -f /dev/null
     restart: unless-stopped
 
-  # Conteneur cible 1 - Serveur Web
   target-web:
     image: ubuntu:22.04
     container_name: lab-target-web
@@ -22,12 +20,12 @@ services:
       - lab-network
     volumes:
       - ./targets/web:/app
-    command: /bin/bash -c "apt-get update && apt-get install -y python3 python3-pip nginx && python3 -m http.server 8080 & nginx -g 'daemon off;'"
+    working_dir: /app
+    command: /bin/bash -c "apt-get update && apt-get install -y python3 && python3 -m http.server 8080"
     ports:
       - "8080:8080"
     restart: unless-stopped
 
-  # Conteneur cible 2 - Base de données
   target-db:
     image: ubuntu:22.04
     container_name: lab-target-db
@@ -40,7 +38,6 @@ services:
       - "3306:3306"
     restart: unless-stopped
 
-  # Conteneur cible 3 - API
   target-api:
     image: ubuntu:22.04
     container_name: lab-target-api
@@ -53,7 +50,6 @@ services:
       - "5000:5000"
     restart: unless-stopped
 
-  # Interface Web de contrôle
   web-ui:
     image: nginx:alpine
     container_name: lab-web-ui
@@ -68,7 +64,6 @@ services:
       - ansible-control
     restart: unless-stopped
 
-  # Service de détection réseau (HOST MODE)
   network-scanner:
     image: ubuntu:22.04
     container_name: lab-network-scanner
@@ -81,7 +76,6 @@ services:
       - NET_RAW
     restart: unless-stopped
 
-  # API de contrôle
   control-api:
     image: ubuntu:22.04
     container_name: lab-control-api

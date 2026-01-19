@@ -1,16 +1,23 @@
 #!/bin/bash
-# Script de destruction automatique du laboratoire
+# Script de destruction du laboratoire éphémère
+# Compatible Docker Compose v2 et v1
 
 set -e
 
-echo "🗑️  Destruction du laboratoire éphémère..."
+echo "🧨 Destruction du laboratoire éphémère..."
 
-# Arrêter et supprimer tous les conteneurs
+# Détection Docker Compose
+if docker compose version &>/dev/null; then
+    COMPOSE="docker compose"
+elif command -v docker-compose &>/dev/null; then
+    COMPOSE="docker-compose"
+else
+    echo "❌ Docker Compose non trouvé"
+    exit 1
+fi
+
 echo "🛑 Arrêt des conteneurs..."
-docker-compose down -v
+$COMPOSE down -v --remove-orphans
 
-# Nettoyer les réseaux orphelins
-echo "🧹 Nettoyage des réseaux..."
-docker network prune -f
-
-echo "✅ Laboratoire détruit avec succès!"
+echo "🧹 Nettoyage terminé"
+echo "✅ Laboratoire détruit avec succès"

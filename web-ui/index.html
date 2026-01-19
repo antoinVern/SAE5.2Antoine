@@ -242,7 +242,8 @@
             deviceList.innerHTML = '';
 
             try {
-                const response = await fetch('http://localhost:5001/api/discover');
+                const response = await fetch('/scanner/api/discover')
+;
                 const data = await response.json();
                 
                 statusDiv.innerHTML = `<div class="status running">${data.count} machine(s) trouvée(s) sur ${data.network}</div>`;
