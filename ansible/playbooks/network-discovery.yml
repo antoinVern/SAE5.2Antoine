@@ -1,0 +1,33 @@
+---
+- name: Configuration pour la découverte réseau
+  hosts: targets
+  become: yes
+
+  tasks:
+    - name: Installer les outils réseau
+      apt:
+        name:
+          - nmap
+          - net-tools
+          - iputils-ping
+          - arp-scan
+        state: present
+
+    - name: Créer le script de découverte
+      copy:
+        content: |
+          #!/bin/bash
+          # Script de découverte réseau
+          NETWORK=$(ip route | grep default | awk '{print $3}' | cut -d. -f1-3).0/24
+          echo "Scanning network: $NETWORK"
+          nmap -sn $NETWORK | grep -E "Nmap scan report|MAC Address" > /tmp/network_discovery.txt
+          cat /tmp/network_discovery.txt
+        dest: /usr/local/bin/discover-network.sh
+        mode: '0755'
+
+    - name: Créer une tâche cron pour la découverte automatique
+      cron:
+        name: "Network discovery"
+        minute: "*/5"
+        job: "/usr/local/bin/discover-network.sh >> /var/log/network_discovery.log 2>&1"
+        user: root

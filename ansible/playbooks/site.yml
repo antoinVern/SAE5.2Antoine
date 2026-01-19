@@ -1,0 +1,86 @@
+---
+- name: Configuration complète du laboratoire
+  hosts: targets
+  become: yes
+  gather_facts: yes
+
+  tasks:
+    - name: Mettre à jour les paquets système
+      apt:
+        update_cache: yes
+        upgrade: dist
+        autoremove: yes
+        autoclean: yes
+
+    - name: Installer les outils essentiels
+      apt:
+        name:
+          - python3
+          - python3-pip
+          - curl
+          - wget
+          - net-tools
+          - iputils-ping
+          - vim
+          - htop
+        state: present
+
+    - name: Configurer le firewall (UFW)
+      apt:
+        name: ufw
+        state: present
+
+    - name: Activer le firewall
+      ufw:
+        state: enabled
+        policy: deny
+
+    - name: Autoriser SSH
+      ufw:
+        rule: allow
+        port: '22'
+        proto: tcp
+
+    - name: Créer un utilisateur non-privilégié
+      user:
+        name: labuser
+        groups: sudo
+        shell: /bin/bash
+        create_home: yes
+        password: "{{ 'labuser123' | password_hash('sha512') }}"
+
+    - name: Configurer sudo sans mot de passe pour labuser
+      lineinfile:
+        path: /etc/sudoers.d/labuser
+        line: "labuser ALL=(ALL) NOPASSWD: ALL"
+        create: yes
+        mode: '0440'
+        validate: 'visudo -cf %s'
+
+    - name: Désactiver l'authentification par mot de passe root
+      lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: '^PermitRootLogin'
+        line: 'PermitRootLogin no'
+        backup: yes
+      notify: restart ssh
+
+    - name: Configurer les logs
+      blockinfile:
+        path: /etc/rsyslog.conf
+        block: |
+          # Logs du laboratoire
+          local0.*    /var/log/lab.log
+        marker: "# {mark} ANSIBLE MANAGED BLOCK"
+
+    - name: Créer le répertoire de logs
+      file:
+        path: /var/log/lab
+        state: directory
+        mode: '0755'
+
+  handlers:
+    - name: restart ssh
+      service:
+        name: ssh
+        state: restarted

@@ -1,0 +1,109 @@
+version: '3.8'
+
+services:
+  # Conteneur Ansible Control Node
+  ansible-control:
+    image: cytopia/ansible:latest
+    container_name: lab-ansible-control
+    networks:
+      - lab-network
+    volumes:
+      - ./ansible:/etc/ansible
+      - ./scripts:/scripts
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    environment:
+      - ANSIBLE_HOST_KEY_CHECKING=False
+    command: tail -f /dev/null
+    restart: unless-stopped
+
+  # Conteneur cible 1 - Serveur Web
+  target-web:
+    image: ubuntu:22.04
+    container_name: lab-target-web
+    networks:
+      - lab-network
+    volumes:
+      - ./targets/web:/app
+    command: /bin/bash -c "apt-get update && apt-get install -y python3 python3-pip nginx && python3 -m http.server 8080 & nginx -g 'daemon off;'"
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+
+  # Conteneur cible 2 - Base de données
+  target-db:
+    image: ubuntu:22.04
+    container_name: lab-target-db
+    networks:
+      - lab-network
+    environment:
+      - MYSQL_ROOT_PASSWORD=secure_password_123
+    command: /bin/bash -c "apt-get update && apt-get install -y python3 mysql-server && service mysql start && tail -f /dev/null"
+    ports:
+      - "3306:3306"
+    restart: unless-stopped
+
+  # Conteneur cible 3 - API
+  target-api:
+    image: ubuntu:22.04
+    container_name: lab-target-api
+    networks:
+      - lab-network
+    volumes:
+      - ./targets/api:/app
+    command: /bin/bash -c "apt-get update && apt-get install -y python3 python3-pip && pip3 install flask && python3 /app/api.py"
+    ports:
+      - "5000:5000"
+    restart: unless-stopped
+
+  # Interface Web de contrôle
+  web-ui:
+    image: nginx:alpine
+    container_name: lab-web-ui
+    networks:
+      - lab-network
+    volumes:
+      - ./web-ui:/usr/share/nginx/html
+      - ./web-ui/nginx.conf:/etc/nginx/conf.d/default.conf
+    ports:
+      - "80:80"
+    depends_on:
+      - ansible-control
+    restart: unless-stopped
+
+  # Service de détection réseau
+  network-scanner:
+    image: ubuntu:22.04
+    container_name: lab-network-scanner
+    networks:
+      - lab-network
+    volumes:
+      - ./scripts:/scripts
+    command: /bin/bash -c "apt-get update && apt-get install -y nmap python3 python3-pip net-tools && pip3 install flask requests && python3 /scripts/network_scanner.py"
+    ports:
+      - "5001:5001"
+    network_mode: host
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+    restart: unless-stopped
+
+  # API de contrôle
+  control-api:
+    image: ubuntu:22.04
+    container_name: lab-control-api
+    networks:
+      - lab-network
+    volumes:
+      - ./scripts:/scripts
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    command: /bin/bash -c "apt-get update && apt-get install -y python3 python3-pip docker.io && pip3 install flask flask-cors && python3 /scripts/control_api.py"
+    ports:
+      - "5002:5002"
+    restart: unless-stopped
+
+networks:
+  lab-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16

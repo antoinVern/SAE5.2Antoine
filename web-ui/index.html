@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Laboratoire Éphémère - Contrôle</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .dashboard {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            transition: transform 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+        }
+
+        .card h2 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 1.5em;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: bold;
+            width: 100%;
+            margin: 5px 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .btn:hover {
+            opacity: 0.9;
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        }
+
+        .status {
+            padding: 10px;
+            border-radius: 8px;
+            margin: 10px 0;
+            font-weight: bold;
+        }
+
+        .status.running {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status.stopped {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .device-list {
+            max-height: 300px;
+            overflow-y: auto;
+            margin-top: 15px;
+        }
+
+        .device-item {
+            background: #f8f9fa;
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 5px;
+            border-left: 4px solid #667eea;
+        }
+
+        .device-item strong {
+            color: #667eea;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #667eea;
+        }
+
+        .log-container {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            max-height: 200px;
+            overflow-y: auto;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔬 Laboratoire Éphémère</h1>
+            <p>Contrôle et gestion du laboratoire de test</p>
+        </div>
+
+        <div class="dashboard">
+            <!-- Carte de contrôle -->
+            <div class="card">
+                <h2>⚙️ Contrôle</h2>
+                <button class="btn btn-success" onclick="startLab()">▶️ Démarrer le laboratoire</button>
+                <button class="btn" onclick="stopLab()">⏸️ Arrêter le laboratoire</button>
+                <button class="btn" onclick="restartLab()">🔄 Redémarrer le laboratoire</button>
+                <button class="btn btn-danger" onclick="destroyLab()">🗑️ Détruire le laboratoire</button>
+                <div id="control-status" class="status stopped">Arrêté</div>
+            </div>
+
+            <!-- Carte de découverte réseau -->
+            <div class="card">
+                <h2>🌐 Découverte Réseau</h2>
+                <button class="btn" onclick="scanNetwork()">🔍 Scanner le réseau</button>
+                <div id="network-status" class="loading">En attente...</div>
+                <div id="device-list" class="device-list"></div>
+            </div>
+
+            <!-- Carte d'état des services -->
+            <div class="card">
+                <h2>📊 État des Services</h2>
+                <div id="services-status">
+                    <div class="loading">Chargement...</div>
+                </div>
+            </div>
+
+            <!-- Carte de logs -->
+            <div class="card">
+                <h2>📝 Logs</h2>
+                <button class="btn" onclick="refreshLogs()">🔄 Actualiser les logs</button>
+                <div id="logs" class="log-container">Aucun log disponible</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Fonctions de contrôle
+        async function startLab() {
+            try {
+                const response = await fetch('/api/control/start', { method: 'POST' });
+                const data = await response.json();
+                updateStatus('control-status', data.status === 'running' ? 'running' : 'stopped', data.message);
+            } catch (error) {
+                alert('Erreur: ' + error.message);
+            }
+        }
+
+        async function stopLab() {
+            try {
+                const response = await fetch('/api/control/stop', { method: 'POST' });
+                const data = await response.json();
+                updateStatus('control-status', 'stopped', data.message);
+            } catch (error) {
+                alert('Erreur: ' + error.message);
+            }
+        }
+
+        async function restartLab() {
+            try {
+                const response = await fetch('/api/control/restart', { method: 'POST' });
+                const data = await response.json();
+                updateStatus('control-status', 'running', data.message);
+            } catch (error) {
+                alert('Erreur: ' + error.message);
+            }
+        }
+
+        async function destroyLab() {
+            if (!confirm('⚠️ Êtes-vous sûr de vouloir détruire le laboratoire ? Cette action est irréversible.')) {
+                return;
+            }
+            try {
+                const response = await fetch('/api/control/destroy', { method: 'POST' });
+                const data = await response.json();
+                alert(data.message);
+                updateStatus('control-status', 'stopped', 'Laboratoire détruit');
+            } catch (error) {
+                alert('Erreur: ' + error.message);
+            }
+        }
+
+        // Découverte réseau
+        async function scanNetwork() {
+            const statusDiv = document.getElementById('network-status');
+            const deviceList = document.getElementById('device-list');
+            
+            statusDiv.innerHTML = '<div class="loading">🔍 Scan en cours...</div>';
+            deviceList.innerHTML = '';
+
+            try {
+                const response = await fetch('http://localhost:5001/api/discover');
+                const data = await response.json();
+                
+                statusDiv.innerHTML = `<div class="status running">${data.count} machine(s) trouvée(s) sur ${data.network}</div>`;
+                
+                if (data.devices && data.devices.length > 0) {
+                    deviceList.innerHTML = data.devices.map(device => `
+                        <div class="device-item">
+                            <strong>IP:</strong> ${device.ip || 'N/A'}<br>
+                            ${device.hostname ? `<strong>Hostname:</strong> ${device.hostname}<br>` : ''}
+                            ${device.mac ? `<strong>MAC:</strong> ${device.mac}<br>` : ''}
+                            ${device.vendor ? `<strong>Vendor:</strong> ${device.vendor}` : ''}
+                        </div>
+                    `).join('');
+                } else {
+                    deviceList.innerHTML = '<div class="status stopped">Aucune machine trouvée</div>';
+                }
+            } catch (error) {
+                statusDiv.innerHTML = `<div class="status stopped">Erreur: ${error.message}</div>`;
+            }
+        }
+
+        // Mise à jour du statut
+        function updateStatus(elementId, status, message) {
+            const element = document.getElementById(elementId);
+            element.className = `status ${status}`;
+            element.textContent = message;
+        }
+
+        // Actualiser les logs
+        async function refreshLogs() {
+            const logsDiv = document.getElementById('logs');
+            logsDiv.innerHTML = 'Chargement des logs...';
+            
+            try {
+                const response = await fetch('/api/logs');
+                const data = await response.json();
+                logsDiv.innerHTML = data.logs || 'Aucun log disponible';
+            } catch (error) {
+                logsDiv.innerHTML = 'Erreur lors du chargement des logs';
+            }
+        }
+
+        // Vérifier l'état des services
+        async function checkServices() {
+            const servicesDiv = document.getElementById('services-status');
+            const services = [
+                { name: 'Web UI', port: 80 },
+                { name: 'Network Scanner', port: 5001 },
+                { name: 'Target Web', port: 8080 },
+                { name: 'Target API', port: 5000 }
+            ];
+
+            let html = '';
+            for (const service of services) {
+                try {
+                    const response = await fetch(`http://localhost:${service.port}`, { method: 'HEAD', mode: 'no-cors' });
+                    html += `<div class="status running">✅ ${service.name} - Port ${service.port}</div>`;
+                } catch (error) {
+                    html += `<div class="status stopped">❌ ${service.name} - Port ${service.port}</div>`;
+                }
+            }
+            servicesDiv.innerHTML = html;
+        }
+
+        // Auto-refresh
+        setInterval(scanNetwork, 30000); // Scan réseau toutes les 30 secondes
+        setInterval(checkServices, 10000); // Vérifier les services toutes les 10 secondes
+        setInterval(refreshLogs, 15000); // Actualiser les logs toutes les 15 secondes
+
+        // Initialisation
+        window.onload = function() {
+            scanNetwork();
+            checkServices();
+            refreshLogs();
+        };
+    </script>
+</body>
+</html>
