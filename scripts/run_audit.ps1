@@ -136,14 +136,21 @@ switch ($Action) {
     }
     default {
         Print-Header
-        Write-Host "Usage: .\run_audit.ps1 [deploy|audit|consolidate|cleanup|all]"
+        Write-Host "Usage: .\run_audit.ps1 [deploy|audit|consolidate|cleanup|all]" -ForegroundColor White
         Write-Host ""
-        Write-Host "Commandes disponibles:"
+        Write-Host "Commandes disponibles:" -ForegroundColor Cyan
         Write-Host "  deploy      - Déploie l'infrastructure complète (VMs + Docker + config réseau)"
         Write-Host "  audit       - Exécute les scans d'audit Nmap"
         Write-Host "  consolidate - Consolide les rapports d'audit en HTML"
         Write-Host "  cleanup     - Nettoie l'environnement (conteneurs + VMs)"
-        Write-Host "  all         - Exécute tout le scénario (deploy + audit + consolidate)"
+        Write-Host "  all         - Exécute tout le scénario (deploy + audit + consolidate)" -ForegroundColor Green
+        Write-Host ""
+        Write-Host "Exemples:" -ForegroundColor Yellow
+        Write-Host "  .\run_audit.ps1 all         # Scénario complet (recommandé)"
+        Write-Host "  .\run_audit.ps1 deploy      # Déploiement uniquement"
+        Write-Host "  .\run_audit.ps1 cleanup     # Nettoyage"
+        Write-Host ""
+        Write-Host "Documentation: https://github.com/antoinVern/SAE5.2Antoine" -ForegroundColor Gray
         Write-Host ""
     }
 }

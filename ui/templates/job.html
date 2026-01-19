@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Job {{ job_id }} — SAÉ 5.02</title>
+    <style>
+      body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 24px; background: #0b1020; color: #e7eaf3; }
+      .wrap { max-width: 980px; margin: 0 auto; }
+      a { color: #8ab4ff; text-decoration: none; }
+      a:hover { text-decoration: underline; }
+      .top { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+      .pill { padding: 6px 10px; border-radius: 999px; border: 1px solid #243055; background: #121a33; font-size: 13px; color: #b7bdd3; }
+      pre {
+        margin-top: 14px;
+        background: #050816;
+        border: 1px solid #243055;
+        border-radius: 12px;
+        padding: 14px;
+        height: 70vh;
+        overflow: auto;
+        white-space: pre-wrap;
+        word-wrap: break-word;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        font-size: 13px;
+        line-height: 1.35;
+      }
+      .btn {
+        display: inline-block;
+        padding: 10px 12px;
+        border: 1px solid #243055;
+        background: #121a33;
+        color: #e7eaf3;
+        border-radius: 10px;
+      }
+      .btn:hover { background: #162044; }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <div class="top">
+        <div>
+          <div style="font-size: 20px; font-weight: 750;">Job</div>
+          <div style="color:#b7bdd3;">Action: <strong>{{ job.action }}</strong> — ID: <code>{{ job_id }}</code></div>
+        </div>
+        <div style="display:flex; gap:10px; align-items:center;">
+          <span id="status" class="pill">status: {{ job.status }}</span>
+          <a class="btn" href="/">← Retour</a>
+        </div>
+      </div>
+
+      <pre id="log"></pre>
+    </div>
+
+    <script>
+      const logEl = document.getElementById("log");
+      const statusEl = document.getElementById("status");
+      const jobId = "{{ job_id }}";
+
+      function setStatus(s) {
+        statusEl.textContent = "status: " + s;
+      }
+
+      fetch(`/api/job/${jobId}`).then(r => r.json()).then(j => setStatus(j.status)).catch(()=>{});
+
+      const es = new EventSource(`/logs/${jobId}`);
+      es.onmessage = (ev) => {
+        logEl.textContent += ev.data;
+        logEl.scrollTop = logEl.scrollHeight;
+      };
+      es.addEventListener("done", () => {
+        fetch(`/api/job/${jobId}`).then(r => r.json()).then(j => setStatus(j.status)).catch(()=>{});
+        es.close();
+      });
+    </script>
+  </body>
+</html>
+

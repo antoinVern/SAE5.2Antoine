@@ -1,17 +1,28 @@
 # --- Vagrant / VirtualBox ---
 .vagrant/
 *.box
+Vagrantfile.local
 
 # --- Ansible ---
 *.retry
 ansible.log
+*.log
 
 # Vault password files (NE JAMAIS versionner)
 .vault_pass
 vault_pass.txt
+*.vault_pass
 
-# Local override inventory (si tu en fais un)
+# Backup files (NE JAMAIS versionner)
+*.bak
+*.backup
+*.old
+*~
+
+# Local override inventory
 inventory/hosts.local.ini
+inventory/hosts.local
+inventory/*.local
 
 # --- Python ---
 __pycache__/
@@ -19,10 +30,20 @@ __pycache__/
 *.pyo
 *.pyd
 .Python
+*.py[cod]
+*.so
 venv/
 .venv/
 env/
 .env/
+ENV/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# --- UI local (venv + artefacts) ---
+.venv/
+.venv-*/
 
 # --- Reports / artifacts (générés pendant les audits) ---
 reports/
@@ -30,6 +51,8 @@ reports/
 *.gnmap
 scan_*.txt
 scan_summary.txt
+targets.txt
+discovery_*.gnmap
 audit_consolidated_report.html
 audit_consolidated_report.json
 
@@ -37,10 +60,49 @@ audit_consolidated_report.json
 Thumbs.db
 Desktop.ini
 .DS_Store
+.AppleDouble
+.LSOverride
+Icon
+._*
 
 # --- IDE / Editor ---
 .vscode/
 .idea/
 *.swp
-*~
+*.swo
+*.swn
+.project
+.classpath
+.settings/
+*.sublime-project
+*.sublime-workspace
 
+# --- Temporary files ---
+*.tmp
+*.temp
+*.cache
+*.pid
+*.seed
+*.pid.lock
+
+# --- Windows ---
+*.lnk
+ehthumbs.db
+$RECYCLE.BIN/
+
+# --- Mac ---
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
+
+# --- Linux ---
+*~
+.fuse_hidden*
+.directory
+.Trash-*
+
+# --- Project specific ---
+# Dossiers de doublons (si créés par erreur)
+SAE5.2Antoine/

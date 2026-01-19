@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>SAÉ 5.02 — Audit UI</title>
+    <style>
+      body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 24px; background: #0b1020; color: #e7eaf3; }
+      .wrap { max-width: 980px; margin: 0 auto; }
+      h1 { margin: 0 0 6px; font-size: 28px; }
+      p { margin: 0 0 18px; color: #b7bdd3; }
+      .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+      form { margin: 0; }
+      button {
+        width: 100%;
+        padding: 16px 14px;
+        border: 1px solid #243055;
+        background: #121a33;
+        color: #e7eaf3;
+        border-radius: 12px;
+        cursor: pointer;
+        font-size: 16px;
+        font-weight: 650;
+      }
+      button:hover { background: #162044; }
+      .hint { margin-top: 14px; font-size: 13px; color: #9aa3c0; }
+      code { background: #101836; padding: 2px 6px; border-radius: 6px; border: 1px solid #243055; }
+      .warn { margin-top: 18px; padding: 12px; background: #15102a; border: 1px solid #3a2a7a; border-radius: 12px; color: #d8d2ff;}
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <h1>Plateforme d’audit — UI locale</h1>
+      <p>Clique sur un bouton pour lancer les playbooks (VirtualBox/Vagrant + Ansible + Docker).</p>
+
+      <div class="grid">
+        <form method="post" action="/run/deploy"><button>🚀 Déployer</button></form>
+        <form method="post" action="/run/audit"><button>🔍 Audit</button></form>
+        <form method="post" action="/run/consolidate"><button>📊 Consolider</button></form>
+        <form method="post" action="/run/cleanup"><button>🧹 Nettoyer</button></form>
+        <form method="post" action="/run/all"><button>⚡ Tout faire</button></form>
+      </div>
+
+      <div class="warn">
+        <strong>Note:</strong> cette page lance <code>scripts/run_audit.ps1</code> sur ta machine (localhost). Il faut VirtualBox + Vagrant + Ansible installés.
+      </div>
+
+      <div class="hint">
+        Port par défaut: <code>http://127.0.0.1:5050</code> — configurable via <code>UI_PORT</code>.
+      </div>
+    </div>
+  </body>
+</html>
+
