@@ -1,0 +1,18 @@
+---
+# Variables non sensibles pour l'environnement d'audit
+
+# Répertoires
+audit_reports_dir: /opt/audit/reports
+audit_scripts_dir: /opt/audit/scripts
+
+# Configuration réseau
+lan_subnet: "10.10.10.0/24"
+dmz_subnet: "10.10.20.0/24"
+
+# Configuration Nmap
+nmap_ports: "22,80,443,8080"
+nmap_scan_type: "-sS"  # SYN scan
+nmap_timing: "-T4"      # Timing agressif
+
+# Configuration Docker
+docker_compose_version: "3.8"

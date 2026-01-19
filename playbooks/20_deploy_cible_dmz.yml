@@ -1,17 +1,19 @@
 ---
-- name: Déployer nginx sur la cible DMZ
+- name: Déployer une cible nginx en conteneur sur la DMZ
   hosts: vm_cible_dmz
   become: true
-  tasks:
-    - name: Installer nginx
+  pre_tasks:
+    - name: Installer dépendances Python pour community.docker
       ansible.builtin.apt:
-        name: nginx
+        name:
+          - python3-pip
         state: present
         update_cache: yes
 
-    - name: Démarrer nginx
-      ansible.builtin.service:
-        name: nginx
-        state: started
-        enabled: true
-        
+    - name: Installer SDK Docker (python)
+      ansible.builtin.pip:
+        name: docker
+        state: present
+
+  roles:
+    - cible_nginx

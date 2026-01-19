@@ -14,13 +14,13 @@
     state: started
     recreate: true
     published_ports:
-      - "8080:80"
+      - "80:80"
     volumes:
       - /opt/audit/reports:/reports
 
 - name: Attendre que nginx soit disponible
   uri:
-    url: "http://localhost:8080"
+    url: "http://localhost:80"
     status_code: 200
   register: nginx_status
   retries: 10

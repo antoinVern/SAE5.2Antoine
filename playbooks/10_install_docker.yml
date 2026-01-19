@@ -1,6 +1,8 @@
 ---
-- name: Installer Docker et outils d’audit sur la VM attaquante
-  hosts: vm_attaquant
+- name: Installer Docker (attaquant + cible DMZ)
+  hosts:
+    - vm_attaquant
+    - vm_cible_dmz
   become: true
 
   tasks:

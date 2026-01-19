@@ -1,0 +1,46 @@
+# --- Vagrant / VirtualBox ---
+.vagrant/
+*.box
+
+# --- Ansible ---
+*.retry
+ansible.log
+
+# Vault password files (NE JAMAIS versionner)
+.vault_pass
+vault_pass.txt
+
+# Local override inventory (si tu en fais un)
+inventory/hosts.local.ini
+
+# --- Python ---
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+venv/
+.venv/
+env/
+.env/
+
+# --- Reports / artifacts (générés pendant les audits) ---
+reports/
+*.xml
+*.gnmap
+scan_*.txt
+scan_summary.txt
+audit_consolidated_report.html
+audit_consolidated_report.json
+
+# --- OS files ---
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# --- IDE / Editor ---
+.vscode/
+.idea/
+*.swp
+*~
+
