@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # Conteneur Ansible Control Node
   ansible-control:
@@ -70,17 +68,13 @@ services:
       - ansible-control
     restart: unless-stopped
 
-  # Service de détection réseau
+  # Service de détection réseau (HOST MODE)
   network-scanner:
     image: ubuntu:22.04
     container_name: lab-network-scanner
-    networks:
-      - lab-network
     volumes:
       - ./scripts:/scripts
     command: /bin/bash -c "apt-get update && apt-get install -y nmap python3 python3-pip net-tools && pip3 install flask requests && python3 /scripts/network_scanner.py"
-    ports:
-      - "5001:5001"
     network_mode: host
     cap_add:
       - NET_ADMIN
