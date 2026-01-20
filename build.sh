@@ -45,8 +45,23 @@ if ! docker ps &> /dev/null; then
     exit 1
 fi
 
-# Nettoyer les anciennes instances
-echo "🧹 Nettoyage des anciennes instances..."
+# Uniformiser le nom du projet docker compose pour éviter les doublons
+export COMPOSE_PROJECT_NAME=project
+
+# Nettoyer les ports déjà occupés pour ce labo (cas de crash/arrêt brutal)
+echo "🧹 Vérification des ports utilisés..."
+PORTS=(15000 15002 18080 13306)
+for PORT in "${PORTS[@]}"; do
+    CONTAINERS=$(docker ps --format '{{.ID}} {{.Ports}}' | grep -E "0\.0\.0\.0:${PORT}->" | awk '{print $1}')
+    if [[ -n "$CONTAINERS" ]]; then
+        echo "   Port ${PORT} occupé, arrêt du/des conteneur(s): $CONTAINERS"
+        docker stop $CONTAINERS >/dev/null 2>&1 || true
+        docker rm $CONTAINERS   >/dev/null 2>&1 || true
+    fi
+done
+
+# Nettoyer les anciennes instances du projet
+echo "🧹 Nettoyage des anciennes instances du labo..."
 $COMPOSE down -v 2>/dev/null || true
 
 # Construire et démarrer les conteneurs
