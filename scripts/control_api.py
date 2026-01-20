@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 import os
+import re
+import shutil
 import subprocess
 from flask import Flask, jsonify
 from flask_cors import CORS
@@ -10,6 +12,7 @@ CORS(app)
 PROJECT_DIR = os.environ.get("PROJECT_DIR", "/project")
 COMPOSE_FILE = os.environ.get("COMPOSE_FILE", os.path.join(PROJECT_DIR, "docker-compose.yml"))
 PROJECT_NAME = os.environ.get("COMPOSE_PROJECT_NAME", "project")
+CRITICAL_PORTS = [15000, 15002, 18080, 13306]
 
 def run(cmd, cwd=None):
     try:
@@ -24,11 +27,68 @@ def run(cmd, cwd=None):
         return {"success": False, "code": -1, "out": "", "err": str(e)}
 
 def compose(args):
-    base = ["docker-compose", "-p", PROJECT_NAME, "-f", COMPOSE_FILE]
+    """
+    Utilise docker compose v2 si disponible, sinon docker-compose v1.
+    """
+    base = None
+    if shutil.which("docker") and run(["docker", "compose", "version"])["success"]:
+        base = ["docker", "compose", "-p", PROJECT_NAME, "-f", COMPOSE_FILE]
+    elif shutil.which("docker-compose"):
+        base = ["docker-compose", "-p", PROJECT_NAME, "-f", COMPOSE_FILE]
+    else:
+        return {"success": False, "code": 127, "out": "", "err": "docker compose / docker-compose introuvable"}
+
     return run(base + args, cwd=PROJECT_DIR)
+
+
+def ensure_docker_ready():
+    """Vérifie que le daemon Docker répond."""
+    info = run(["docker", "info"])
+    if info["success"]:
+        return True, ""
+    return False, info["err"] or info["out"] or "Docker n'est pas disponible"
+
+
+def free_ports():
+    """
+    Libère les ports critiques utilisés par d'autres conteneurs pour éviter
+    les erreurs “port already allocated”.
+    """
+    ps = run(["docker", "ps", "--format", "{{.ID}} {{.Ports}}"])
+    if not ps["success"]:
+        return False, ps["err"] or ps["out"] or "Impossible de lister les conteneurs"
+
+    to_stop = []
+    for line in (ps["out"] or "").splitlines():
+        parts = line.split(maxsplit=1)
+        if len(parts) != 2:
+            continue
+        cid, ports_str = parts
+        for port in CRITICAL_PORTS:
+            if re.search(rf"0\.0\.0\.0:{port}->|:{port}->", ports_str):
+                to_stop.append(cid)
+                break
+
+    if not to_stop:
+        return True, ""
+
+    stop_res = run(["docker", "stop"] + to_stop)
+    rm_res = run(["docker", "rm"] + to_stop)
+    if stop_res["success"] and rm_res["success"]:
+        return True, ""
+    msg = (stop_res["err"] or stop_res["out"] or "") + "\n" + (rm_res["err"] or rm_res["out"] or "")
+    return False, msg.strip()
 
 @app.route("/api/control/start", methods=["POST"])
 def start_lab():
+    ready, err = ensure_docker_ready()
+    if not ready:
+        return jsonify({"status": "error", "message": f"Docker indisponible : {err}"}), 503
+
+    freed, ferr = free_ports()
+    if not freed:
+        return jsonify({"status": "error", "message": f"Impossible de libérer les ports : {ferr}"}), 500
+
     # down avant up -> évite l’empilement
     down = compose(["down", "-v", "--remove-orphans"])
     up = compose(["up", "-d", "--build"])
