@@ -1,7 +1,6 @@
 services:
   ansible-control:
     image: cytopia/ansible:latest
-    container_name: lab-ansible-control
     networks:
       - lab-network
     volumes:
@@ -15,7 +14,6 @@ services:
 
   target-web:
     image: ubuntu:22.04
-    container_name: lab-target-web
     networks:
       - lab-network
     volumes:
@@ -28,7 +26,6 @@ services:
 
   target-db:
     image: ubuntu:22.04
-    container_name: lab-target-db
     networks:
       - lab-network
     environment:
@@ -40,7 +37,6 @@ services:
 
   target-api:
     image: ubuntu:22.04
-    container_name: lab-target-api
     networks:
       - lab-network
     volumes:
@@ -52,7 +48,6 @@ services:
 
   web-ui:
     image: nginx:alpine
-    container_name: lab-web-ui
     networks:
       - lab-network
     volumes:
@@ -62,15 +57,12 @@ services:
       - "80:80"
     depends_on:
       - control-api
-    # IMPORTANT: permet d'accéder à l'hôte (scanner en host mode)
     extra_hosts:
       - "host.docker.internal:host-gateway"
     restart: unless-stopped
 
-  # Scanner réseau (HOST MODE)
   network-scanner:
     image: ubuntu:22.04
-    container_name: lab-network-scanner
     volumes:
       - ./scripts:/scripts
     command: /bin/bash -c "apt-get update && apt-get install -y nmap python3 python3-pip net-tools && pip3 install flask requests && python3 /scripts/network_scanner.py"
@@ -80,12 +72,10 @@ services:
       - NET_RAW
     restart: unless-stopped
 
-  # Control API (build)
   control-api:
     build:
       context: .
       dockerfile: scripts/Dockerfile.control-api
-    container_name: lab-control-api
     networks:
       - lab-network
     volumes:
@@ -94,6 +84,7 @@ services:
     environment:
       - PROJECT_DIR=/project
       - COMPOSE_FILE=/project/docker-compose.yml
+      - COMPOSE_PROJECT_NAME=project
     ports:
       - "5002:5002"
     restart: unless-stopped

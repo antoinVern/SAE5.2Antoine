@@ -9,6 +9,7 @@ CORS(app)
 
 PROJECT_DIR = os.environ.get("PROJECT_DIR", "/project")
 COMPOSE_FILE = os.environ.get("COMPOSE_FILE", os.path.join(PROJECT_DIR, "docker-compose.yml"))
+PROJECT_NAME = os.environ.get("COMPOSE_PROJECT_NAME", "project")
 
 def run(cmd, cwd=None):
     try:
@@ -23,22 +24,21 @@ def run(cmd, cwd=None):
         return {"success": False, "code": -1, "out": "", "err": str(e)}
 
 def compose(args):
-    # docker-compose (v1) dans le conteneur control-api
-    return run(["docker-compose", "-f", COMPOSE_FILE] + args, cwd=PROJECT_DIR)
+    base = ["docker-compose", "-p", PROJECT_NAME, "-f", COMPOSE_FILE]
+    return run(base + args, cwd=PROJECT_DIR)
 
 @app.route("/api/control/start", methods=["POST"])
 def start_lab():
-    # 🔥 évite les conflits de noms: down + remove-orphans avant up
-    cleanup = compose(["down", "-v", "--remove-orphans"])
+    # down avant up -> évite l’empilement
+    down = compose(["down", "-v", "--remove-orphans"])
     up = compose(["up", "-d", "--build"])
 
     if up["success"]:
         return jsonify({"status": "running", "message": "Laboratoire démarré avec succès"})
 
-    # si down a échoué mais up a aussi échoué, on renvoie le max d'info
     msg = up["err"] or up["out"] or "Unknown error"
-    if cleanup["err"] or cleanup["out"]:
-        msg = f"{cleanup['err'] or cleanup['out']}\n{msg}".strip()
+    if down["err"] or down["out"]:
+        msg = (down["err"] or down["out"]) + "\n" + msg
 
     return jsonify({"status": "error", "message": f"Erreur: {msg}"}), 500
 
@@ -65,12 +65,12 @@ def destroy_lab():
 
 @app.route("/api/logs", methods=["GET"])
 def logs():
-    r = compose(["logs", "--tail=80"])
+    r = compose(["logs", "--tail=120"])
     return jsonify({"logs": r["out"] or r["err"] or "Aucun log disponible"})
 
 @app.route("/api/health", methods=["GET"])
 def health():
-    return jsonify({"status": "ok", "project_dir": PROJECT_DIR, "compose_file": COMPOSE_FILE})
+    return jsonify({"status": "ok", "project": PROJECT_NAME, "compose_file": COMPOSE_FILE})
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5002, debug=False)
