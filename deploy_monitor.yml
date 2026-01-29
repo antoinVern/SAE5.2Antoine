@@ -1,0 +1,55 @@
+---
+- name: Deploiement du CyberMonitor 360
+  hosts: monitor
+  become: yes
+  vars:
+    project_dir: "/opt/secu-monitor"
+
+  tasks:
+    # --- PRÉREQUIS ---
+    - name: Installation de Docker et Git
+      apt:
+        name: [docker.io, python3-pip, git]
+        state: present
+        update_cache: yes
+
+    - name: Installation du module Python Docker pour Ansible
+      pip:
+        name: docker
+        break_system_packages: true # Nécessaire sur les Ubuntu récents
+      ignore_errors: yes
+
+    # --- MISE EN PLACE DU CODE ---
+    - name: Création du dossier de projet
+      file:
+        path: "{{ project_dir }}"
+        state: directory
+        mode: '0755'
+
+    - name: Copie du code source
+      copy:
+        src: app/
+        dest: "{{ project_dir }}/"
+        mode: '0755'
+
+    # --- DOCKER ---
+    - name: Construction de l'image Docker (Build)
+      community.docker.docker_image:
+        name: cyber-monitor-img
+        build:
+          path: "{{ project_dir }}"
+        source: build
+        force_source: yes
+
+    - name: Lancement du conteneur
+      community.docker.docker_container:
+        name: cyber-monitor-app
+        image: cyber-monitor-img
+        state: started
+        recreate: yes
+        ports:
+          - "5000:5000"
+
+    - name: FIN
+      debug:
+        msg: "✅ CyberMonitor est en ligne ! Accède à http://localhost:5000"
