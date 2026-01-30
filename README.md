@@ -54,8 +54,8 @@ sudo apt install -y ansible git
 ### 1️⃣ Cloner le dépôt
 
 ```bash
-git clone https://github.com/TON-PSEUDO/CyberMonitor-Pro.git
-cd CyberMonitor-Pro
+git clone https://github.com/antoinVern/SAE5.2Antoine.git
+cd SAE5.2Antoine
 ```
 
 ### 2️⃣ Lancer l'installation
